@@ -25,6 +25,7 @@ class ContactValidator extends AbstractValidator
             'extension' => ['required', 'regex:/(^xlsx$)|(^csv$)/'],
         ],
     ];
+
     public function getSchemaRules($entity)
     {
         $schema = $this->getSchemaFunction($entity);

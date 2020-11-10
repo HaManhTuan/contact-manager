@@ -3,9 +3,11 @@
 namespace VCComponent\Laravel\Contact\Entities;
 
 use Illuminate\Database\Eloquent\Model;
-use VCComponent\Laravel\Contact\Entities\ContactMeta;
+use VCComponent\Laravel\Contact\Traits\ContactSchemaTrait;
+
 class Contact extends Model
 {
+    use ContactSchemaTrait;
     protected $fillable = [
         'email',
         'full_name',
@@ -15,28 +17,14 @@ class Contact extends Model
         'phone_number',
         'note',
         'type',
-        'status'
+        'status',
     ];
     public function schema()
     {
-        return [
-            'fax' => [
-                'type' => 'integer',
-                'rule' => [],
-            ],
-            'phone_ct'    => [
-                'type' => 'integer',
-                'rule' => [],
-            ]
-        ];
-    }
-    public function metaContact()
-    {
-        return $this->hasMany(ContactMeta::class);
+        return [];
     }
     public function ableToUse($user)
     {
         return true;
     }
-
 }

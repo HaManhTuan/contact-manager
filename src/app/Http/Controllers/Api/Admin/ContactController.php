@@ -2,17 +2,17 @@
 
 namespace VCComponent\Laravel\Contact\Http\Controllers\Api\Admin;
 
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 use VCComponent\Laravel\Contact\Repositories\ContactRepository;
+use VCComponent\Laravel\Contact\Traits\Helpers;
 use VCComponent\Laravel\Contact\Transformers\ContactTransformer;
 use VCComponent\Laravel\Contact\Validators\ContactValidator;
 use VCComponent\Laravel\Export\Services\Export\Export;
 use VCComponent\Laravel\Vicoders\Core\Controllers\ApiController;
 use VCComponent\Laravel\Vicoders\Core\Exceptions\PermissionDeniedException;
-use VCComponent\Laravel\Contact\Traits\Helpers;
 
 class ContactController extends ApiController
 {
@@ -26,8 +26,8 @@ class ContactController extends ApiController
     public function __construct(ContactRepository $repository, ContactValidator $validator)
     {
         $this->repository = $repository;
-        $this->entity     = $repository->getEntity();
-        $this->validator  = $validator;
+        $this->entity = $repository->getEntity();
+        $this->validator = $validator;
 
         if (isset(config('contact.transformers')['contact'])) {
             $this->transformer = config('contact.transformers.contact');
@@ -88,16 +88,16 @@ class ContactController extends ApiController
 
         $this->validator->isValid($request, 'RULE_EXPORT');
 
-        $data   = $request->all();
+        $data = $request->all();
         $orders = $this->getReportContacts($request);
 
         $args = [
-            'data'      => $orders,
-            'label'     => $request->label ? $data['label'] : 'Orders',
+            'data' => $orders,
+            'label' => $request->label ? $data['label'] : 'Orders',
             'extension' => $request->extension ? $data['extension'] : 'Xlsx',
         ];
         $export = new Export($args);
-        $url    = $export->export();
+        $url = $export->export();
 
         return $this->response->array(['url' => $url]);
     }
@@ -111,7 +111,7 @@ class ContactController extends ApiController
             'contacts.last_name as `Họ`',
             'contacts.phone_number as `Số điện thoại`',
             'contacts.address as `Địa chỉ chi tiết`',
-            'contacts.province as `Thành phố`'  ,
+            'contacts.province as `Thành phố`',
             'contacts.district as `Quận`',
             'contacts.ward as `Phường`',
             'contacts.note as `Ghi chú`',
@@ -123,7 +123,7 @@ class ContactController extends ApiController
         $fields = implode(', ', $fields);
 
         $query = $this->entity->query();
-        $query         = $query->select(DB::raw($fields));
+        $query = $query->select(DB::raw($fields));
         $query = $this->getStatus($request, $query);
         $query = $this->getType($request, $query);
 
@@ -189,16 +189,12 @@ class ContactController extends ApiController
     public function store(Request $request)
     {
 
-        $data = $this->filterContactRequestData($request,$this->entity);
-
-        $schema_rules   = $this->validator->getSchemaRules($this->entity);
+        $data = $this->filterContactRequestData($request, $this->entity);
+        $schema_rules = $this->validator->getSchemaRules($this->entity);
         $no_rule_fields = $this->validator->getNoRuleFields($this->entity);
-
         $this->validator->isValid($data['default'], 'RULE_CREATE');
         $this->validator->isSchemaValid($data['schema'], $schema_rules);
-
         $contact = $this->repository->create($data['default']);
-
         if (count($data['schema'])) {
             foreach ($data['schema'] as $key => $value) {
                 $contact->metaContact()->updateOrcreate([
@@ -213,23 +209,17 @@ class ContactController extends ApiController
 
     public function update(Request $request, $id)
     {
-
         $contact = $this->repository->find($id);
-
-        $data = $this->filterContactRequestData($request,$this->entity);
-        $schema_rules   = $this->validator->getSchemaRules($this->entity);
-
+        $data = $this->filterContactRequestData($request, $this->entity);
+        $schema_rules = $this->validator->getSchemaRules($this->entity);
         $this->validator->isValid($data['default'], 'RULE_ADMIN_UPDATE');
         $this->validator->isSchemaValid($data['schema'], $schema_rules);
-
         $contact = $this->repository->update($data['default'], $id);
-
         if (count($data['schema'])) {
             foreach ($data['schema'] as $key => $value) {
                 $contact->metaContact()->updateOrCreate(['key' => $key], ['value' => $value]);
             }
         }
-
         return $this->response->item($contact, new $this->transformer());
     }
 
@@ -279,9 +269,9 @@ class ContactController extends ApiController
     {
         if ($request->has('from')) {
 
-            $field     = $this->field($request);
+            $field = $this->field($request);
             $form_date = $this->fomatDate($request->from);
-            $query     = $query->whereDate($field, '>=', $form_date);
+            $query = $query->whereDate($field, '>=', $form_date);
         }
         return $query;
     }
@@ -289,9 +279,9 @@ class ContactController extends ApiController
     public function getToDate($request, $query)
     {
         if ($request->has('to')) {
-            $field   = $this->field($request);
+            $field = $this->field($request);
             $to_date = $this->fomatDate($request->to);
-            $query   = $query->whereDate($field, '<=', $to_date);
+            $query = $query->whereDate($field, '<=', $to_date);
         }
         return $query;
     }

@@ -3,13 +3,12 @@
 namespace VCComponent\Laravel\Contact\Http\Controllers\Api\Frontend;
 
 use Illuminate\Http\Request;
-use VCComponent\Laravel\Contact\Traits\Helpers;
 use VCComponent\Laravel\Contact\Repositories\ContactRepository;
+use VCComponent\Laravel\Contact\Traits\Helpers;
 use VCComponent\Laravel\Contact\Transformers\ContactTransformer;
 use VCComponent\Laravel\Contact\Validators\ContactValidator;
 use VCComponent\Laravel\Vicoders\Core\Controllers\ApiController;
 use VCComponent\Laravel\Vicoders\Core\Exceptions\PermissionDeniedException;
-
 
 class ContactController extends ApiController
 {
@@ -47,11 +46,8 @@ class ContactController extends ApiController
     public function index(Request $request)
     {
         $query = $this->entity->query();
-        //Điều kiện
         $query = $this->applyConstraintsFromRequest($query, $request);
-        //Search
         $query = $this->applySearchFromRequest($query, ['email', 'full_name', 'first_name', 'last_name'], $request, ['metaContact' => ['value']]);
-        //Sắp xếp
         $query = $this->applyOrderByFromRequest($query, $request);
 
         $per_page = $request->has('per_page') ? (int) $request->get('per_page') : 15;
@@ -84,9 +80,9 @@ class ContactController extends ApiController
     public function store(Request $request)
     {
 
-        $data = $this->filterContactRequestData($request,$this->entity);
+        $data = $this->filterContactRequestData($request, $this->entity);
 
-        $schema_rules   = $this->validator->getSchemaRules($this->entity);
+        $schema_rules = $this->validator->getSchemaRules($this->entity);
         $no_rule_fields = $this->validator->getNoRuleFields($this->entity);
 
         $this->validator->isValid($data['default'], 'RULE_CREATE');
