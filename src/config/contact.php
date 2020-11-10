@@ -6,6 +6,7 @@ return [
 
     'models'          => [
         'contact' => VCComponent\Laravel\Contact\Entities\Contact::class,
+        'contact_meta' => VCComponent\Laravel\Contact\Entities\ContactMeta::class
     ],
 
     'transformers'    => [

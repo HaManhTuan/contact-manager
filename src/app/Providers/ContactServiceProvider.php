@@ -37,7 +37,6 @@ class ContactServiceProvider extends ServiceProvider
         $this->app->singleton('moduleContact.contact', function () {
             return new Contact();
         });
-
         $this->app->bind(ContractsContact::class, 'moduleContact.contact');
     }
     public function provides()

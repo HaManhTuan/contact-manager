@@ -3,14 +3,18 @@
 namespace VCComponent\Laravel\Contact\Http\Controllers\Api\Frontend;
 
 use Illuminate\Http\Request;
+use VCComponent\Laravel\Contact\Traits\Helpers;
 use VCComponent\Laravel\Contact\Repositories\ContactRepository;
 use VCComponent\Laravel\Contact\Transformers\ContactTransformer;
 use VCComponent\Laravel\Contact\Validators\ContactValidator;
 use VCComponent\Laravel\Vicoders\Core\Controllers\ApiController;
 use VCComponent\Laravel\Vicoders\Core\Exceptions\PermissionDeniedException;
 
+
 class ContactController extends ApiController
 {
+    use Helpers;
+
     protected $repository;
     protected $entity;
     protected $transformer;
@@ -19,8 +23,8 @@ class ContactController extends ApiController
     public function __construct(ContactRepository $repository, ContactValidator $validator)
     {
         $this->repository = $repository;
-        $this->entity     = $repository->getEntity();
-        $this->validator  = $validator;
+        $this->entity = $repository->getEntity();
+        $this->validator = $validator;
 
         if (isset(config('contact.transformers')['contact'])) {
             $this->transformer = config('contact.transformers.contact');
@@ -43,9 +47,11 @@ class ContactController extends ApiController
     public function index(Request $request)
     {
         $query = $this->entity->query();
-
+        //Điều kiện
         $query = $this->applyConstraintsFromRequest($query, $request);
-        $query = $this->applySearchFromRequest($query, ['email', 'full_name', 'first_name', 'last_name'], $request);
+        //Search
+        $query = $this->applySearchFromRequest($query, ['email', 'full_name', 'first_name', 'last_name'], $request, ['metaContact' => ['value']]);
+        //Sắp xếp
         $query = $this->applyOrderByFromRequest($query, $request);
 
         $per_page = $request->has('per_page') ? (int) $request->get('per_page') : 15;
@@ -54,12 +60,13 @@ class ContactController extends ApiController
         return $this->response->paginator($contacts, new $this->transformer());
     }
 
-    function list(Request $request)
-    {
+    function list(Request $request) {
         $query = $this->entity->query();
 
         $query = $this->applyConstraintsFromRequest($query, $request);
-        $query = $this->applySearchFromRequest($query, ['email', 'full_name', 'first_name', 'last_name'], $request);
+
+        $query = $this->applySearchFromRequest($query, ['email', 'full_name', 'first_name', 'last_name'], $request, ['metaContact' => ['value']]);
+
         $query = $this->applyOrderByFromRequest($query, $request);
 
         $contacts = $query->get();
@@ -76,9 +83,26 @@ class ContactController extends ApiController
 
     public function store(Request $request)
     {
-        $this->validator->isValid($request, 'RULE_CREATE');
-        $contact = $this->repository->create($request->all());
 
+        $data = $this->filterContactRequestData($request,$this->entity);
+
+        $schema_rules   = $this->validator->getSchemaRules($this->entity);
+        $no_rule_fields = $this->validator->getNoRuleFields($this->entity);
+
+        $this->validator->isValid($data['default'], 'RULE_CREATE');
+        $this->validator->isSchemaValid($data['schema'], $schema_rules);
+
+        $contact = $this->repository->create($data['default']);
+
+        if (count($data['schema'])) {
+            foreach ($data['schema'] as $key => $value) {
+                $contact->metaContact()->updateOrcreate([
+                    'key' => $key,
+                ], [
+                    'value' => $value,
+                ]);
+            }
+        }
         return $this->response->item($contact, new $this->transformer());
     }
 }

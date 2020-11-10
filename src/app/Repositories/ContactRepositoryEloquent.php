@@ -7,12 +7,13 @@ use Prettus\Repository\Eloquent\BaseRepository;
 use VCComponent\Laravel\Contact\Entities\Contact;
 use VCComponent\Laravel\Contact\Repositories\ContactRepository;
 use VCComponent\Laravel\Vicoders\Core\Exceptions\NotFoundException;
-
+use VCComponent\Laravel\Contact\Traits\Helpers;
 /**
  * Class AccountantRepositoryEloquent.
  */
 class ContactRepositoryEloquent extends BaseRepository implements ContactRepository
 {
+    use Helpers;
     /**
      * Specify Model class name
      *
@@ -35,7 +36,6 @@ class ContactRepositoryEloquent extends BaseRepository implements ContactReposit
     public function updateStatus($request, $id)
     {
         $contact = $this->find($id);
-
         $contact->status = $request->input('status');
         $contact->save();
     }
@@ -53,6 +53,22 @@ class ContactRepositoryEloquent extends BaseRepository implements ContactReposit
         $result = $this->whereIn("id", $request->ids)->update(['status' => $data['status']]);
 
         return $result;
+    }
+
+    public function createContact($request)
+    {
+        $data = $this->filterContactRequestData($request,$this->getEntity());
+        $contact = $this->create($data['default']);
+        if (count($data['schema'])) {
+            foreach ($data['schema'] as $key => $value) {
+                $contact->metaContact()->updateOrcreate([
+                    'key' => $key,
+                ], [
+                    'value' => $value,
+                ]);
+            }
+        }
+        return true;
     }
 
     /**

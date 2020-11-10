@@ -12,9 +12,12 @@ use VCComponent\Laravel\Contact\Validators\ContactValidator;
 use VCComponent\Laravel\Export\Services\Export\Export;
 use VCComponent\Laravel\Vicoders\Core\Controllers\ApiController;
 use VCComponent\Laravel\Vicoders\Core\Exceptions\PermissionDeniedException;
+use VCComponent\Laravel\Contact\Traits\Helpers;
 
 class ContactController extends ApiController
 {
+    use Helpers;
+
     protected $repository;
     protected $entity;
     protected $transformer;
@@ -185,18 +188,47 @@ class ContactController extends ApiController
 
     public function store(Request $request)
     {
-        $this->validator->isValid($request, 'RULE_ADMIN_CREATE');
 
-        $contact = $this->repository->create($request->all());
+        $data = $this->filterContactRequestData($request,$this->entity);
 
+        $schema_rules   = $this->validator->getSchemaRules($this->entity);
+        $no_rule_fields = $this->validator->getNoRuleFields($this->entity);
+
+        $this->validator->isValid($data['default'], 'RULE_CREATE');
+        $this->validator->isSchemaValid($data['schema'], $schema_rules);
+
+        $contact = $this->repository->create($data['default']);
+
+        if (count($data['schema'])) {
+            foreach ($data['schema'] as $key => $value) {
+                $contact->metaContact()->updateOrcreate([
+                    'key' => $key,
+                ], [
+                    'value' => $value,
+                ]);
+            }
+        }
         return $this->response->item($contact, new $this->transformer());
     }
 
     public function update(Request $request, $id)
     {
-        $this->validator->isValid($request, 'RULE_ADMIN_UPDATE');
-        $this->repository->find($id);
-        $contact = $this->repository->update($request->all(), $id);
+
+        $contact = $this->repository->find($id);
+
+        $data = $this->filterContactRequestData($request,$this->entity);
+        $schema_rules   = $this->validator->getSchemaRules($this->entity);
+
+        $this->validator->isValid($data['default'], 'RULE_ADMIN_UPDATE');
+        $this->validator->isSchemaValid($data['schema'], $schema_rules);
+
+        $contact = $this->repository->update($data['default'], $id);
+
+        if (count($data['schema'])) {
+            foreach ($data['schema'] as $key => $value) {
+                $contact->metaContact()->updateOrCreate(['key' => $key], ['value' => $value]);
+            }
+        }
 
         return $this->response->item($contact, new $this->transformer());
     }

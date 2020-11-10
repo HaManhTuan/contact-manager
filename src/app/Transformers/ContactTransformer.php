@@ -15,7 +15,7 @@ class ContactTransformer extends TransformerAbstract
 
     public function transform($model)
     {
-        return [
+        $transform = [
             'id'         => (int) $model->id,
             'email'      => $model->email,
             'full_name'  => $model->full_name,
@@ -24,11 +24,17 @@ class ContactTransformer extends TransformerAbstract
             'address'    => $model->address,
             'status'     => $model->status,
             'note'       => $model->note,
-            'type'       => (int) $model->type,
-            'timestamps' => [
-                'created_at' => $model->created_at,
-                'updated_at' => $model->updated_at,
-            ],
+            'type'       => (int) $model->type
         ];
+        if ($model->metaContact->count()) {
+            foreach ($model->metaContact as $item) {
+                $transform[$item['key']] = $item['value'];
+            }
+        }
+        $transform['timestamps'] = [
+            'created_at' => $model->created_at,
+            'updated_at' => $model->updated_at,
+        ];
+        return $transform;
     }
 }
